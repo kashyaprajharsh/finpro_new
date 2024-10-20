@@ -289,6 +289,7 @@ def main():
                         st.session_state.user['session_id'],
                         st.session_state.path
                     )
+                    print(response)
                 
                 if response:
                     message_placeholder.markdown(response["response"])

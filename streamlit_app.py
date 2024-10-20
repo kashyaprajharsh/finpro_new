@@ -194,142 +194,146 @@ def main():
         st.session_state.user = {'username': '', 'session_id': ''}
 
     if not st.session_state.user['username']:
-        tab1, tab2 = st.tabs(["Login", "Register"])
-
-        with tab1:
-            st.subheader("Login")
-            username = st.text_input("Username", key="login_username")
-            password = st.text_input("Password", type="password", key="login_password")
-            if st.button("Login"):
-                user = login_user(username, password)
-                if user:
-                    st.session_state.user['username'] = user['username']
-                    st.session_state.user['session_id'] = user['session_id']
-                    st.success("Logged in successfully!")
-                    st.rerun()
-                else:
-                    st.error("Invalid username or password")
-
-        with tab2:
-            st.subheader("Register")
-            new_username = st.text_input("Username", key="register_username")
-            new_full_name = st.text_input("Full Name", key="register_full_name")
-            new_email = st.text_input("Email", key="register_email")
-            new_password = st.text_input("Password", type="password", key="register_password")
-            if st.button("Register"):
-                user = register_user(new_username, new_full_name, new_email, new_password)
-                if user:
-                    st.session_state.user['username'] = user['username']
-                    st.session_state.user['session_id'] = user['session_id']
-                    st.success("Registered successfully! You can now log in.")
-                    st.rerun()
-                else:
-                    st.error("Registration failed. Username or email might already exist.")
-
+        login_register_page()
     else:
-        with st.sidebar:
-            st.subheader(f"Welcome, {st.session_state.user['username']}!")
-            st.session_state.path = folder_selector()
+        main_app_page()
 
-            if st.button("Clear Message History"):
-                if clear_message_history(st.session_state.user['username'], st.session_state.user['session_id']):
-                    st.session_state.messages = []
-                    st.success("Message history cleared successfully.")
-                    st.rerun()  # Add this line to force a rerun of the app
-                else:
-                    st.error("Failed to clear message history.")
+def login_register_page():
+    tab1, tab2 = st.tabs(["Login", "Register"])
 
-            if st.button("Logout"):
-                st.session_state.user = {'username': '', 'session_id': ''}
+    with tab1:
+        st.subheader("Login")
+        username = st.text_input("Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        if st.button("Login"):
+            user = login_user(username, password)
+            if user:
+                st.session_state.user['username'] = user['username']
+                st.session_state.user['session_id'] = user['session_id']
+                st.success("Logged in successfully!")
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+
+    with tab2:
+        st.subheader("Register")
+        new_username = st.text_input("Username", key="register_username")
+        new_full_name = st.text_input("Full Name", key="register_full_name")
+        new_email = st.text_input("Email", key="register_email")
+        new_password = st.text_input("Password", type="password", key="register_password")
+        if st.button("Register"):
+            user = register_user(new_username, new_full_name, new_email, new_password)
+            if user:
+                st.session_state.user['username'] = user['username']
+                st.session_state.user['session_id'] = user['session_id']
+                st.success("Registered successfully! You can now log in.")
+                st.rerun()
+            else:
+                st.error("Registration failed. Username or email might already exist.")
+
+def main_app_page():
+    with st.sidebar:
+        st.subheader(f"Welcome, {st.session_state.user['username']}!")
+        st.session_state.path = folder_selector()
+
+        if st.button("Clear Message History"):
+            if clear_message_history(st.session_state.user['username'], st.session_state.user['session_id']):
                 st.session_state.messages = []
+                st.success("Message history cleared successfully.")
                 st.rerun()
+            else:
+                st.error("Failed to clear message history.")
 
-        if 'messages' not in st.session_state:
+        if st.button("Logout"):
+            st.session_state.user = {'username': '', 'session_id': ''}
             st.session_state.messages = []
+            st.rerun()
 
-        for i, message in enumerate(st.session_state.messages):
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-            
-            if message["role"] == "assistant":
-                if "sources" in message:
-                    with st.expander("View Sources"):
-                        if message["sources"]:
-                            for idx, source in enumerate(message["sources"]):
-                                st.markdown(f"**Source {idx + 1}:**")
-                                st.markdown(f"**File:** {source['metadata'].get('source', 'N/A')}")
-                                st.markdown(f"**Page:** {source['metadata'].get('page', 'N/A')}")
-                                with st.container():
-                                    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
-                                    st.markdown(f"**Content:**\n\n{source['page_content']}")
-                                    st.markdown('</div>', unsafe_allow_html=True)
-                                st.markdown("---")
-                        else:
-                            st.write("No sources available for this response.")
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
 
-                feedback = streamlit_feedback(
-                    feedback_type="faces",
-                    optional_text_label="[Optional] Please provide an explanation",
-                    key=f"feedback_{message.get('id', '')}_{i}",
-                )
-                if feedback:
-                    scores = {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0}
-                    success = send_feedback(
-                        st.session_state.user['username'],
-                        message.get('id', ''),
-                        feedback["type"],
-                        scores[feedback["score"]],
-                        feedback.get("text", "")
-                    )
-                    if success is not None:
-                        st.success("Feedback submitted successfully!")
+    for i, message in enumerate(st.session_state.messages):
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+        
+        if message["role"] == "assistant":
+            if "sources" in message:
+                with st.expander("View Sources"):
+                    if message["sources"]:
+                        for idx, source in enumerate(message["sources"]):
+                            st.markdown(f"**Source {idx + 1}:**")
+                            st.markdown(f"**File:** {source['metadata'].get('source', 'N/A')}")
+                            st.markdown(f"**Page:** {source['metadata'].get('page', 'N/A')}")
+                            with st.container():
+                                st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
+                                st.markdown(f"**Content:**\n\n{source['page_content']}")
+                                st.markdown('</div>', unsafe_allow_html=True)
+                            st.markdown("---")
                     else:
-                        st.error("Failed to submit feedback. Please try again.")
+                        st.write("No sources available for this response.")
 
-        if prompt := st.chat_input("What is your question?"):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            with st.chat_message("assistant"):
-                message_placeholder = st.empty()
-                
-                with st.spinner("Processing..."):
-                    response = send_message(
-                        st.session_state.user['username'],
-                        prompt,
-                        st.session_state.user['session_id'],
-                        st.session_state.path
-                    )
-                    print(response)
-                
-                if response:
-                    message_placeholder.markdown(response["response"])
-                    st.session_state.messages.append({
-                        "role": "assistant", 
-                        "content": response["response"], 
-                        "id": response["message_id"],
-                        "sources": response.get("sources", [])
-                    })
-                    
-                    with st.expander("View Sources"):
-                        if response.get("sources"):
-                            for idx, source in enumerate(response["sources"]):
-                                st.markdown(f"**Source {idx + 1}:**")
-                                st.markdown(f"**File:** {source['metadata'].get('source', 'N/A')}")
-                                st.markdown(f"**Page:** {source['metadata'].get('page', 'N/A')}")
-                                with st.container():
-                                    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
-                                    st.markdown(f"**Content:**\n\n{source['page_content']}")
-                                    st.markdown('</div>', unsafe_allow_html=True)
-                                st.markdown("---")
-                        else:
-                            st.write("No sources available for this response.")
+            feedback = streamlit_feedback(
+                feedback_type="faces",
+                optional_text_label="[Optional] Please provide an explanation",
+                key=f"feedback_{message.get('id', '')}_{i}",
+            )
+            if feedback:
+                scores = {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0}
+                success = send_feedback(
+                    st.session_state.user['username'],
+                    message.get('id', ''),
+                    feedback["type"],
+                    scores[feedback["score"]],
+                    feedback.get("text", "")
+                )
+                if success is not None:
+                    st.success("Feedback submitted successfully!")
                 else:
-                    message_placeholder.error("Failed to get a response from the AI. Please try again.")
+                    st.error("Failed to submit feedback. Please try again.")
 
-                st.rerun()
+    if prompt := st.chat_input("What is your question?"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            
+            with st.spinner("Processing..."):
+                response = send_message(
+                    st.session_state.user['username'],
+                    prompt,
+                    st.session_state.user['session_id'],
+                    st.session_state.path
+                )
+                print(response)
+            
+            if response:
+                message_placeholder.markdown(response["response"])
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": response["response"], 
+                    "id": response["message_id"],
+                    "sources": response.get("sources", [])
+                })
+                
+                with st.expander("View Sources"):
+                    if response.get("sources"):
+                        for idx, source in enumerate(response["sources"]):
+                            st.markdown(f"**Source {idx + 1}:**")
+                            st.markdown(f"**File:** {source['metadata'].get('source', 'N/A')}")
+                            st.markdown(f"**Page:** {source['metadata'].get('page', 'N/A')}")
+                            with st.container():
+                                st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
+                                st.markdown(f"**Content:**\n\n{source['page_content']}")
+                                st.markdown('</div>', unsafe_allow_html=True)
+                            st.markdown("---")
+                    else:
+                        st.write("No sources available for this response.")
+            else:
+                message_placeholder.error("Failed to get a response from the AI. Please try again.")
+
+            st.rerun()
 
 if __name__ == "__main__":
     main()
-

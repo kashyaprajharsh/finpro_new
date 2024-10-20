@@ -60,14 +60,31 @@ def folder_selector():
         st.error(f"Error loading metadata: {str(e)}")
         return []
 
-    # Get unique companies
-    unique_companies = list(set([os.path.basename(os.path.dirname(entry["source"])) for entry in metadata]))
+    # Investigate source paths
+    st.write("Sample source paths:")
+    for i, entry in enumerate(metadata[:5]):  # Show first 5 entries
+        st.write(f"Entry {i + 1}: {entry['source']}")
+
+    # Extract company names more robustly
+    def extract_company(source):
+        parts = source.split(os.path.sep)
+        if "Concalls" in parts:
+            idx = parts.index("Concalls")
+            if idx + 1 < len(parts):
+                return parts[idx + 1]
+        return None
+
+    unique_companies = list(set(filter(None, [extract_company(entry["source"]) for entry in metadata])))
     unique_companies.sort()
     st.write(f"Number of unique companies: {len(unique_companies)}")
     st.write(f"Unique companies: {unique_companies}")
 
     # Create a dropdown for selecting the company
-    selected_company = st.selectbox("Select a Company:", unique_companies, key="company_selector")
+    if unique_companies:
+        selected_company = st.selectbox("Select a Company:", unique_companies, key="company_selector")
+    else:
+        st.error("No companies found in the metadata.")
+        return []
 
     # Filter metadata based on the selected company
     company_metadata = [entry for entry in metadata if entry["source"].startswith(os.path.join("E:\\earning_reports_copilot\\Concalls", selected_company))]

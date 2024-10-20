@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 from streamlit_feedback import streamlit_feedback
 import time
+from requests.exceptions import ChunkedEncodingError, RequestException
 
 load_dotenv()
 
@@ -43,18 +44,28 @@ def login_user(username, password):
     )
     return response.json() if response.status_code == 200 else None
 
-def send_feedback(username, message_id, feedback_type, score, comment):
-    response = requests.post(
-        f"{API_URL}/feedback/",
-        json={
-            "message_id": message_id,
-            "feedback_type": feedback_type,
-            "score": score,
-            "comment": comment
-        },
-        params={"username": username}
-    )
-    return response.json() if response.status_code == 200 else None
+def send_feedback(username, message_id, feedback_type, score, comment, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                f"{API_URL}/feedback/",
+                json={
+                    "message_id": message_id,
+                    "feedback_type": feedback_type,
+                    "score": score,
+                    "comment": comment
+                },
+                params={"username": username},
+                timeout=10  # Add a timeout to prevent hanging
+            )
+            response.raise_for_status()  # Raise an exception for bad status codes
+            return response.json() if response.status_code == 200 else None
+        except (ChunkedEncodingError, RequestException) as e:
+            if attempt == max_retries - 1:
+                st.error(f"Failed to submit feedback after {max_retries} attempts: {str(e)}")
+                return None
+            time.sleep(1)  # Wait for 1 second before retrying
+    return None
 
 
 def folder_selector():
@@ -270,7 +281,7 @@ def main():
                         scores[feedback["score"]],
                         feedback.get("text", "")
                     )
-                    if success:
+                    if success is not None:
                         st.success("Feedback submitted successfully!")
                     else:
                         st.error("Failed to submit feedback. Please try again.")
@@ -321,3 +332,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

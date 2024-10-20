@@ -8,6 +8,7 @@ import re
 import os
 from dotenv import load_dotenv
 from streamlit_feedback import streamlit_feedback
+import time
 
 load_dotenv()
 
@@ -300,29 +301,39 @@ def main():
 
             # Get the AI response
             with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = ""
+                
+                # Simulate stream of response with milliseconds delay
+                for chunk in ["Processing", ".", ".", "."]:
+                    full_response += chunk + " "
+                    time.sleep(0.05)
+                    message_placeholder.markdown(full_response + "▌")
+                
                 response, message_id, metrics, sources = send_message(
                     st.session_state.user['username'],
                     prompt,
                     st.session_state.user['session_id'],
-                    st.session_state.path  # Pass the selected paths to the API
+                    st.session_state.path
                 )
+                
                 if response:
-                    st.markdown(response)
+                    message_placeholder.markdown(response)
                     st.session_state.messages.append({
                         "role": "assistant", 
                         "content": response, 
                         "id": message_id,
-                        "metrics": metrics,  # Store metrics in the message
-                        "sources": sources  # Store sources in the message
+                        "metrics": metrics,
+                        "sources": sources
                     })
                     
-                    # Display metrics for the new message
-                    with st.expander("View Response Metrics"):
-                        if metrics:
-                            for metric, value in metrics.items():
-                                st.metric(label=metric, value=f"{value:.4f}")
-                        else:
-                            st.write("No metrics available for this response.")
+                    # # Display metrics for the new message
+                    # with st.expander("View Response Metrics"):
+                    #     if metrics:
+                    #         for metric, value in metrics.items():
+                    #             st.metric(label=metric, value=f"{value:.4f}")
+                    #     else:
+                    #         st.write("No metrics available for this response.")
                     
                     # Display sources for the new message with scrollable content
                     with st.expander("View Sources"):
@@ -339,7 +350,7 @@ def main():
                         else:
                             st.write("No sources available for this response.")
                 else:
-                    st.error("Failed to get a response from the AI. Please try again.")
+                    message_placeholder.error("Failed to get a response from the AI. Please try again.")
 
                 # Force a rerun to show the feedback component for the new message
                 st.rerun()

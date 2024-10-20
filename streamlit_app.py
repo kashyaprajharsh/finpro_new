@@ -78,8 +78,8 @@ def folder_selector():
 
     unique_companies = list(set(filter(None, [extract_company(entry["source"]) for entry in metadata])))
     unique_companies.sort()
-    st.write(f"Number of unique companies: {len(unique_companies)}")
-    st.write(f"Unique companies: {unique_companies}")
+    # st.write(f"Number of unique companies: {len(unique_companies)}")
+    # st.write(f"Unique companies: {unique_companies}")
 
     # Create a dropdown for selecting the company
     if unique_companies:

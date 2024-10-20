@@ -46,13 +46,13 @@ def folder_selector():
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         metadata_path = os.path.join(current_dir, "metadata.json")
-        st.write(f"Attempting to load metadata from: {metadata_path}")
+        #st.write(f"Attempting to load metadata from: {metadata_path}")
         
         if os.path.exists(metadata_path):
             with open(metadata_path, "r") as file:
                 metadata = json.load(file)
-            st.success("Metadata loaded successfully")
-            st.write(f"Number of entries in metadata: {len(metadata)}")
+            st.success("Companies loaded successfully")
+            #st.write(f"Number of entries in metadata: {len(metadata)}")
         else:
             st.error(f"metadata.json not found at {metadata_path}")
             return []
@@ -60,10 +60,10 @@ def folder_selector():
         st.error(f"Error loading metadata: {str(e)}")
         return []
 
-    # Investigate source paths
-    st.write("Sample source paths:")
-    for i, entry in enumerate(metadata[:5]):  # Show first 5 entries
-        st.write(f"Entry {i + 1}: {entry['source']}")
+    # # Investigate source paths
+    # st.write("Sample source paths:")
+    # for i, entry in enumerate(metadata[:5]):  # Show first 5 entries
+    #     st.write(f"Entry {i + 1}: {entry['source']}")
 
     # Extract company names more robustly
     def extract_company(source):

@@ -12,34 +12,50 @@ import time
 
 load_dotenv()
 
-API_URL = os.getenv("API_URL", "https://civic-marlena-finpro-be745773.koyeb.app/")
-
-
-def send_request(endpoint, method="POST", json=None, params=None):
-    url = f"{API_URL}/{endpoint}"
-    response = requests.request(method, url, json=json, params=params)
-    return response.json() if response.status_code == 200 else None
+# FastAPI backend URL
+API_URL = "https://civic-marlena-finpro-be745773.koyeb.app/"  # Keep your original API URL
 
 def send_message(username, message, session_id, paths):
-    response = send_request("chat/", json={
-        "input": message,
-        "username": username,
-        "session_id": session_id,
-        "paths": paths
-    })
-    if response:
-        return response["response"], response["message_id"], response.get("metrics", {}), response.get("sources", [])
-    return None, None, {}, []
+    response = requests.post(
+        f"{API_URL}/chat/",
+        json={"input": message, "username": username, "session_id": session_id, "paths": paths}
+    )
+    return response.json() if response.status_code == 200 else None
 
 def clear_message_history(username, session_id):
-    response = send_request("clear_history/", json={"username": username, "session_id": session_id})
-    return response is not None
+    response = requests.post(
+        f"{API_URL}/clear_history/",
+        json={"username": username, "session_id": session_id}
+    )
+    return response.status_code == 200
 
 def register_user(username, name, email, password):
-    return send_request("register", json={"username": username, "name": name, "email": email, "password": password})
+    response = requests.post(
+        f"{API_URL}/register",
+        json={"username": username, "name": name, "email": email, "password": password}
+    )
+    return response.json() if response.status_code == 200 else None
 
 def login_user(username, password):
-    return send_request("login", json={"username": username, "password": password})
+    response = requests.post(
+        f"{API_URL}/login",
+        json={"username": username, "password": password}
+    )
+    return response.json() if response.status_code == 200 else None
+
+def send_feedback(username, message_id, feedback_type, score, comment):
+    response = requests.post(
+        f"{API_URL}/feedback/",
+        json={
+            "message_id": message_id,
+            "feedback_type": feedback_type,
+            "score": score,
+            "comment": comment
+        },
+        params={"username": username}
+    )
+    return response.json() if response.status_code == 200 else None
+
 
 def folder_selector():
     st.title("Select the Company and the earning calls")
@@ -158,34 +174,10 @@ def extract_year_from_path(path):
         print(f"No year found in path: {path}")
         return None
 
-def send_feedback(username, message_id, feedback_type, score, comment):
-    response = send_request("feedback/", json={"message_id": message_id, "feedback_type": feedback_type, "score": score, "comment": comment}, params={"username": username})
-    print(f"Feedback response: {response}")  # Add this line
-    if response is None:
-        return False, "Failed to submit feedback. Please try again."
-    elif isinstance(response, dict):
-        if "detail" in response:
-            return False, f"Error: {response['detail']}"
-        elif "message" in response:
-            return True, response["message"]
-    return False, "Unexpected response format from server."
 
 def main():
     st.set_page_config(page_title="Finpro - EarningsWhisperer", page_icon="💹", layout="wide")
     st.title("Finpro - EarningsWhisperer 💹")
-
-    # Add custom CSS for scrollable content
-    st.markdown("""
-    <style>
-    .scrollable-container {
-        max-height: 300px;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
     if 'user' not in st.session_state:
         st.session_state.user = {'username': '', 'session_id': ''}
@@ -248,16 +240,6 @@ def main():
                 st.markdown(message["content"])
             
             if message["role"] == "assistant":
-                # Display metrics in an expander if available
-                # if "metrics" in message:
-                #     with st.expander("View Response Metrics"):
-                #         if message["metrics"]:
-                #             for metric, value in message["metrics"].items():
-                #                 st.metric(label=metric, value=f"{value:.4f}")
-                #         else:
-                #             st.write("No metrics available for this response.")
-            
-                # Display sources in an expander with scrollable content
                 if "sources" in message:
                     with st.expander("View Sources"):
                         if message["sources"]:
@@ -280,30 +262,28 @@ def main():
                 )
                 if feedback:
                     scores = {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0}
-                    success, feedback_message = send_feedback(
+                    success = send_feedback(
                         st.session_state.user['username'],
                         message.get('id', ''),
                         feedback["type"],
                         scores[feedback["score"]],
-                        feedback.get("text", None)
+                        feedback.get("text", "")
                     )
                     if success:
-                        st.toast(feedback_message, icon="📝")
+                        st.success("Feedback submitted successfully!")
                     else:
-                        st.error(feedback_message)
+                        st.error("Failed to submit feedback. Please try again.")
 
-        # Add the user's new message to the chat history
         if prompt := st.chat_input("What is your question?"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-            # Get the AI response
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
                 
                 with st.spinner("Processing..."):
-                    response, message_id, metrics, sources = send_message(
+                    response = send_message(
                         st.session_state.user['username'],
                         prompt,
                         st.session_state.user['session_id'],
@@ -311,18 +291,17 @@ def main():
                     )
                 
                 if response:
-                    message_placeholder.markdown(response)
+                    message_placeholder.markdown(response["response"])
                     st.session_state.messages.append({
                         "role": "assistant", 
-                        "content": response, 
-                        "id": message_id,
-                        "sources": sources
+                        "content": response["response"], 
+                        "id": response["message_id"],
+                        "sources": response.get("sources", [])
                     })
                     
-                    # Display sources for the new message with scrollable content
                     with st.expander("View Sources"):
-                        if sources:
-                            for idx, source in enumerate(sources):
+                        if response.get("sources"):
+                            for idx, source in enumerate(response["sources"]):
                                 st.markdown(f"**Source {idx + 1}:**")
                                 st.markdown(f"**File:** {source['metadata'].get('source', 'N/A')}")
                                 st.markdown(f"**Page:** {source['metadata'].get('page', 'N/A')}")
@@ -336,7 +315,6 @@ def main():
                 else:
                     message_placeholder.error("Failed to get a response from the AI. Please try again.")
 
-                # Force a rerun to show the feedback component for the new message
                 st.rerun()
 
 if __name__ == "__main__":

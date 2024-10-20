@@ -250,13 +250,13 @@ def main():
             
             if message["role"] == "assistant":
                 # Display metrics in an expander if available
-                if "metrics" in message:
-                    with st.expander("View Response Metrics"):
-                        if message["metrics"]:
-                            for metric, value in message["metrics"].items():
-                                st.metric(label=metric, value=f"{value:.4f}")
-                        else:
-                            st.write("No metrics available for this response.")
+                # if "metrics" in message:
+                #     with st.expander("View Response Metrics"):
+                #         if message["metrics"]:
+                #             for metric, value in message["metrics"].items():
+                #                 st.metric(label=metric, value=f"{value:.4f}")
+                #         else:
+                #             st.write("No metrics available for this response.")
             
                 # Display sources in an expander with scrollable content
                 if "sources" in message:
@@ -323,7 +323,6 @@ def main():
                         "role": "assistant", 
                         "content": response, 
                         "id": message_id,
-                        "metrics": metrics,
                         "sources": sources
                     })
                     

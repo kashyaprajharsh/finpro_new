@@ -13,12 +13,11 @@ import time
 load_dotenv()
 
 API_URL = os.getenv("API_URL", "https://civic-marlena-finpro-be745773.koyeb.app/")
-CUSTOM_TOKEN = os.getenv("CUSTOM_TOKEN")
+
 
 def send_request(endpoint, method="POST", json=None, params=None):
-    headers = {"Authorization": f"Bearer {CUSTOM_TOKEN}"}
     url = f"{API_URL}/{endpoint}"
-    response = requests.request(method, url, json=json, params=params, headers=headers)
+    response = requests.request(method, url, json=json, params=params)
     return response.json() if response.status_code == 200 else None
 
 def send_message(username, message, session_id, paths):

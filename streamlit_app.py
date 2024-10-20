@@ -302,20 +302,14 @@ def main():
             # Get the AI response
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
-                full_response = ""
                 
-                # Simulate stream of response with milliseconds delay
-                for chunk in ["Processing", ".", ".", "."]:
-                    full_response += chunk + " "
-                    time.sleep(0.05)
-                    message_placeholder.markdown(full_response + "▌")
-                
-                response, message_id, metrics, sources = send_message(
-                    st.session_state.user['username'],
-                    prompt,
-                    st.session_state.user['session_id'],
-                    st.session_state.path
-                )
+                with st.spinner("Processing..."):
+                    response, message_id, metrics, sources = send_message(
+                        st.session_state.user['username'],
+                        prompt,
+                        st.session_state.user['session_id'],
+                        st.session_state.path
+                    )
                 
                 if response:
                     message_placeholder.markdown(response)
@@ -325,14 +319,6 @@ def main():
                         "id": message_id,
                         "sources": sources
                     })
-                    
-                    # # Display metrics for the new message
-                    # with st.expander("View Response Metrics"):
-                    #     if metrics:
-                    #         for metric, value in metrics.items():
-                    #             st.metric(label=metric, value=f"{value:.4f}")
-                    #     else:
-                    #         st.write("No metrics available for this response.")
                     
                     # Display sources for the new message with scrollable content
                     with st.expander("View Sources"):

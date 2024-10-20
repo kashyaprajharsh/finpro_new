@@ -89,7 +89,7 @@ def folder_selector():
         return []
 
     # Filter metadata based on the selected company
-    company_metadata = [entry for entry in metadata if entry["source"].startswith(os.path.join("E:\\earning_reports_copilot\\Concalls", selected_company))]
+    company_metadata = [entry for entry in metadata if extract_company(entry["source"]) == selected_company]
 
     years_months = extract_year_month_from_metadata(company_metadata)
     if years_months:
@@ -106,7 +106,7 @@ def folder_selector():
         if selected_years_months:
             # Get unique months for the selected year
             unique_months = list(set([calendar.month_name[int(month)] for _, month in selected_years_months]))
-            unique_months.sort(reverse=True)
+            unique_months.sort(key=lambda m: list(calendar.month_name).index(m))
 
             selected_month = st.selectbox("Select Month:", unique_months, key="month_selector")
             selected_paths = []
@@ -119,7 +119,7 @@ def folder_selector():
                     path_year = extract_year_from_path(entry["source"])
                     
                     if (
-                        filename_without_date in entry["source"].split("\\")[-1] and
+                        filename_without_date in entry["source"].split("/")[-1] and
                         path_year == selected_year[2:]
                     ):  
                         selected_paths.append(entry["source"])

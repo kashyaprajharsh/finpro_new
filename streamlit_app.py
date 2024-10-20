@@ -44,8 +44,21 @@ def login_user(username, password):
 def folder_selector():
     st.title("Select the Company and the earning calls")
     # Load metadata from the JSON file
-    with open("metadata.json", "r") as file:
-        metadata = json.load(file)
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        metadata_path = os.path.join(current_dir, "metadata.json")
+        st.write(f"Attempting to load metadata from: {metadata_path}")
+        
+        if os.path.exists(metadata_path):
+            with open(metadata_path, "r") as file:
+                metadata = json.load(file)
+            st.success("Metadata loaded successfully")
+        else:
+            st.error(f"metadata.json not found at {metadata_path}")
+            return []
+    except Exception as e:
+        st.error(f"Error loading metadata: {str(e)}")
+        return []
 
     # Get unique companies
     unique_companies = list(set([os.path.basename(os.path.dirname(entry["source"])) for entry in metadata]))

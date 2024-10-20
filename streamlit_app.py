@@ -67,7 +67,9 @@ def folder_selector():
 
     # Extract company names more robustly
     def extract_company(source):
-        parts = source.split(os.path.sep)
+        # Replace backslashes with forward slashes to handle Windows paths
+        source = source.replace("\\", "/")
+        parts = source.split("/")
         if "Concalls" in parts:
             idx = parts.index("Concalls")
             if idx + 1 < len(parts):

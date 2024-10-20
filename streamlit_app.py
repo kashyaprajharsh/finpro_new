@@ -224,6 +224,7 @@ def main():
                 if clear_message_history(st.session_state.user['username'], st.session_state.user['session_id']):
                     st.session_state.messages = []
                     st.success("Message history cleared successfully.")
+                    st.rerun()  # Add this line to force a rerun of the app
                 else:
                     st.error("Failed to clear message history.")
 
